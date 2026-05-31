@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>POS ค่าเช่าห้อง</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F7F6F3;--surface:#FFFFFF;--border:#E5E2DB;--border2:#D0CCC3;
+  --text:#1A1916;--text2:#6B6760;--text3:#9E9A94;
+  --green-bg:#EAF3DE;--green:#27500A;--green-bd:#C0DD97;
+  --blue-bg:#E6F1FB;--blue:#0C447C;--blue-bd:#B5D4F4;
+  --red-bg:#FCEBEB;--red:#791F1F;--red-bd:#F7C1C1;
+  --amber-bg:#FAEEDA;--amber:#633806;--amber-bd:#FAC775;
+  --radius:10px;--rsm:7px;
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+.nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.nav-btn{flex:1;padding:10px 2px 8px;font-size:10px;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;font-family:'Sarabun',sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color .15s}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.page{display:none;flex:1;padding:14px}
+.page.active{display:block}
+
+/* COMMON */
+.slabel{font-size:12px;color:var(--text3);font-weight:600;letter-spacing:.05em;margin-bottom:8px;margin-top:14px}
+.slabel:first-child,.slabel.first{margin-top:0}
+.month-display{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;padding:9px 13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px}
+.panel-select{width:100%;font-size:14px;font-family:'Sarabun',sans-serif;font-weight:500;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--bg);color:var(--text)}
+.panel-select:focus{outline:none;border-color:#85B7EB}
+.pdivider{border:none;border-top:1px solid var(--border);margin:10px 0}
+.badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.badge.cash{background:var(--green-bg);color:var(--green)}
+.badge.transfer{background:var(--blue-bg);color:var(--blue)}
+.badge.unpaid{background:var(--red-bg);color:var(--red)}
+.badge.partial{background:var(--amber-bg);color:var(--amber)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+.metric-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.metric-val{font-size:22px;font-weight:600;color:var(--text)}
+.metric-val.green{color:#3B6D11}
+.metric-val.red{color:var(--red)}
+
+/* HOME PAYMENT */
+.rd-name{font-size:15px;font-weight:600;margin-bottom:3px}
+.rd-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.progress-wrap{margin-bottom:12px}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px}
+.progress-fill{height:100%;border-radius:3px}
+.progress-fill.full{background:#639922}
+.progress-fill.partial{background:#BA7517}
+.progress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--text2)}
+.progress-labels b{color:var(--text);font-weight:600}
+.pay-history{margin-bottom:10px}
+.pay-history-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pay-history-item:last-child{border-bottom:none}
+.pay-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pay-dot.cash{background:#639922}.pay-dot.transfer{background:#378ADD}
+.pay-amt{font-weight:600;margin-left:auto}
+.pay-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;font-size:16px}
+.step-label{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.04em;margin-bottom:6px}
+.step-btns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.step-btn{padding:12px 8px;border:1px solid var(--border);border-radius:var(--radius);background:none;font-size:13px;font-family:'Sarabun',sans-serif;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s;color:var(--text)}
+.step-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.step-btn.sel-full{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
+.step-btn.sel-partial{background:var(--amber-bg);border-color:var(--amber-bd);color:var(--amber)}
+.step-btn.sel-cash{background:var(--green-bg);border-color:var(--green-bd);color:var(--green)}
+.step-btn.sel-transfer{background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue)}
+.amt-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.amt-row label{font-size:13px;color:var(--text2);white-space:nowrap}
+.amt-input{flex:1;font-size:15px;font-family:'Sarabun',sans-serif;font-weight:600;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--bg);color:var(--text)}
+.amt-input:focus{outline:none;border-color:#85B7EB}
+.amt-suffix{font-size:13px;color:var(--text2);white-space:nowrap}
+.change-card{background:var(--green-bg);border:1px solid var(--green-bd);border-radius:var(--radius);padding:11px 13px;margin-bottom:10px;display:none}
+.change-card.show{display:block}
+.change-card-label{font-size:12px;color:#3B6D11;margin-bottom:3px}
+.change-card-val{font-size:24px;font-weight:600;color:var(--green)}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:13px;background:var(--text);color:var(--surface);border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer}
+.btn-primary:active{opacity:.85}
+.btn-danger{width:100%;padding:10px;background:none;border:1px solid var(--red-bd);color:var(--red);border-radius:var(--radius);font-size:13px;font-family:'Sarabun',sans-serif;cursor:pointer;margin-top:6px}
+.btn-ghost{width:100%;padding:9px;background:none;border:none;color:var(--text2);font-size:13px;font-family:'Sarabun',sans-serif;cursor:pointer;margin-top:2px}
+.btn-sec{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:none;font-size:13px;font-family:'Sarabun',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text);margin-top:8px}
+.btn-sec svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* STATUS PAGE */
+.room-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:background .1s}
+.room-card:active{background:var(--bg)}
+.room-card.warn{border-left:3px solid var(--red);border-radius:0 var(--radius) var(--radius) 0}
+.room-card.warn-amber{border-left:3px solid var(--amber);border-radius:0 var(--radius) var(--radius) 0}
+.room-num{width:40px;height:40px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.room-num.cash{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.room-num.transfer{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.room-num.unpaid{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.room-num.partial{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.room-info{flex:1;min-width:0}
+.room-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.empty-state{text-align:center;padding:2.5rem 1rem}
+.empty-state svg{width:40px;height:40px;stroke:var(--green-bd);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 10px;display:block}
+.empty-state p{font-size:15px;color:#3B6D11}
+
+/* METER TABLE */
+.tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead tr{background:var(--bg)}
+th{font-size:11px;font-weight:600;color:var(--text2);padding:8px 5px;text-align:center;border-bottom:1px solid var(--border)}
+td{font-size:12px;padding:7px 5px;text-align:center;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr.done td{background:rgba(99,153,34,.05)}
+.td-prev{color:var(--text3)}
+.td-result{font-weight:600}
+.td-result.water{color:var(--blue)}
+.td-result.elec{color:var(--amber)}
+.meter-input{width:100%;font-size:12px;font-weight:500;padding:5px 4px;border:0.5px solid var(--border2);border-radius:5px;background:var(--bg);color:var(--text);text-align:center;font-family:'Sarabun',sans-serif}
+.meter-input:focus{outline:none;border-color:#85B7EB;background:var(--surface)}
+
+/* RATE CARD */
+.rate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.rate-row{display:grid;grid-template-columns:1fr 52px 80px;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rate-row:last-of-type{border-bottom:none}
+.rate-label{font-size:13px;color:var(--text2)}
+.rate-inp{font-size:13px;font-weight:500;padding:7px 6px;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--bg);color:var(--text);text-align:center;font-family:'Sarabun',sans-serif;width:100%}
+.rate-inp:focus{outline:none;border-color:#85B7EB}
+.rate-unit{font-size:11px;color:var(--text3);text-align:right}
+
+/* SETUP */
+.setup-field{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.setup-label{font-size:12px;color:var(--text2);width:60px;flex-shrink:0;font-weight:500}
+.setup-input{flex:1;font-size:14px;font-family:'Sarabun',sans-serif;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--surface);color:var(--text)}
+.setup-input:focus{outline:none;border-color:#85B7EB}
+.total-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:var(--rsm);padding:8px 10px;margin:6px 0}
+.total-label{font-size:12px;font-weight:600;color:var(--text2)}
+.total-val{font-size:14px;font-weight:600;color:var(--text)}
+.btn-save-row{display:flex;gap:7px;margin-top:10px}
+.btn-save{flex:1;padding:12px;background:var(--text);color:var(--surface);border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer}
+.btn-del-room{padding:12px 15px;border:1px solid var(--red-bd);background:none;border-radius:var(--radius);color:var(--red);cursor:pointer;font-size:16px}
+.btn-add-room{width:100%;padding:10px;border:1px dashed var(--border2);border-radius:var(--radius);background:none;cursor:pointer;font-size:13px;font-family:'Sarabun',sans-serif;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px}
+.save-msg{font-size:13px;color:#3B6D11;text-align:center;margin-top:6px;min-height:16px}
+.month-input-wrap{margin-bottom:14px}
+.month-input-wrap label{font-size:12px;color:var(--text2);font-weight:600;display:block;margin-bottom:5px}
+.month-input{width:100%;font-size:15px;font-weight:600;padding:10px 13px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-family:'Sarabun',sans-serif}
+.month-input:focus{outline:none;border-color:#85B7EB}
+
+/* DRIVE */
+.drive-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:10px}
+.drive-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px}
+.sync-status{font-size:12px;min-height:16px;padding:6px 10px;border-radius:var(--rsm);margin-bottom:8px}
+.sync-status.ok{background:var(--green-bg);color:var(--green)}
+.sync-status.err{background:var(--red-bg);color:var(--red)}
+.sync-status.warn{background:var(--amber-bg);color:var(--amber)}
+.btn-drive{width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-size:13px;font-family:'Sarabun',sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);font-weight:500;margin-bottom:7px}
+.btn-drive svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.btn-drive.green{background:var(--green-bg);border-color:var(--green-bd);color:var(--green);margin-bottom:0}
+#file-input{display:none}
+
+/* RECEIPT */
+@media print{
+  body>*{display:none!important}
+  #receipt-area{display:block!important;position:fixed;inset:0;background:white;padding:0}
+  .receipt-paper{border:none;border-radius:0;padding:8mm 12mm}
+  .receipt-btn-row{display:none!important}
+}
+#receipt-area{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center;padding:0}
+#receipt-area.open{display:flex}
+.receipt-sheet{background:var(--surface);width:100%;max-width:430px;max-height:90vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:0}
+.receipt-paper{background:white;padding:14px 16px;color:#222;font-family:'Sarabun',sans-serif}
+.rh{text-align:center;padding-bottom:10px;border-bottom:1px solid #ddd;margin-bottom:10px}
+.rh h2{font-size:14pt;font-weight:700;margin-bottom:3px;color:#111}
+.rh p{font-size:9pt;color:#555;line-height:1.5}
+.rmeta{display:flex;justify-content:space-between;margin-bottom:10px;font-size:10pt;color:#333}
+.rmeta b{font-weight:700}
+.rtable{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:10pt}
+.rtable td{padding:4px 2px;color:#333}
+.rtable td:last-child{text-align:right;font-weight:500;white-space:nowrap}
+.rtable td.sub{color:#888;font-size:9pt;padding-left:10px}
+.rdivider{border:none;border-top:1px solid #ddd;margin:6px 0}
+.rtotal{display:flex;justify-content:space-between;font-size:13pt;font-weight:700;color:#111;margin-bottom:10px}
+.rbottom{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #eee;padding-top:8px}
+.rfooter{font-size:8.5pt;color:#777;line-height:1.7}
+.rsign{text-align:center}
+.rsign-line{width:100px;border-bottom:1px dotted #aaa;margin:0 auto 4px}
+.rsign p{font-size:9pt;color:#555}
+.rsign .date{font-size:8pt;color:#aaa;margin-top:4px}
+.receipt-btn-row{display:flex;gap:8px;padding:12px 16px 20px}
+.receipt-btn-row button{flex:1;padding:12px;border:none;border-radius:var(--radius);font-size:13px;font-family:'Sarabun',sans-serif;font-weight:600;cursor:pointer}
+.btn-print{background:var(--text);color:var(--surface)}
+.btn-close-r{background:var(--bg);color:var(--text);border:1px solid var(--border2)!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-home" onclick="showPage('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>หน้าหลัก
+    </button>
+    <button class="nav-btn" id="nav-status" onclick="showPage('status')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>สถานะ
+    </button>
+    <button class="nav-btn" id="nav-meter" onclick="showPage('meter')">
+      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>มิเตอร์
+    </button>
+    <button class="nav-btn" id="nav-setup" onclick="showPage('setup')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>ตั้งค่า
+    </button>
+  </nav>
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="month-display" id="home-month-display">—</div>
+    <div class="metrics" id="home-metrics"></div>
+    <div class="slabel first">บันทึกการจ่าย</div>
+    <div class="panel">
+      <select class="panel-select" id="room-dd" onchange="onRoomSelect()">
+        <option value="">— เลือกห้อง —</option>
+      </select>
+      <div id="room-detail" style="display:none">
+        <div class="pdivider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div class="rd-name" id="rd-name"></div>
+            <div class="rd-sub" id="rd-sub"></div>
+          </div>
+          <span class="badge" id="rd-badge"></span>
+        </div>
+        <div class="progress-wrap" id="rd-progress"></div>
+        <div class="pay-history" id="rd-history"></div>
+        <div class="step-label">ขั้นที่ 1 — จำนวน</div>
+        <div class="step-btns">
+          <button class="step-btn" id="stp-full" onclick="rdSelType('full')">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>จ่ายเต็มจำนวน
+          </button>
+          <button class="step-btn" id="stp-partial" onclick="rdSelType('partial')">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>จ่ายบางส่วน
+          </button>
+        </div>
+        <div id="rd-partial-row" style="display:none">
+          <div class="amt-row">
+            <label>จำนวน</label>
+            <input class="amt-input" type="number" id="rd-amt" min="1" placeholder="0">
+            <span class="amt-suffix">บาท</span>
+          </div>
+        </div>
+        <div id="rd-step2" style="display:none">
+          <div class="step-label">ขั้นที่ 2 — วิธีชำระ</div>
+          <div class="step-btns">
+            <button class="step-btn" id="stp-cash" onclick="rdSelMethod('cash')">
+              <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12m-2 0a2 2 0 104 0 2 2 0 10-4 0"/></svg>เงินสด
+            </button>
+            <button class="step-btn" id="stp-tr" onclick="rdSelMethod('transfer')">
+              <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>โอนเงิน
+            </button>
+          </div>
+        </div>
+        <div id="rd-step3" style="display:none">
+          <div class="step-label">ขั้นที่ 3 — รับเงิน (เงินสด)</div>
+          <div class="amt-row" style="margin-bottom:8px">
+            <label>รับมา</label>
+            <input class="amt-input" type="number" id="rd-received" min="1" placeholder="0" oninput="rdCalcChange()">
+            <span class="amt-suffix">บาท</span>
+          </div>
+          <div class="change-card" id="rd-change-card">
+            <div class="change-card-label">ทอนเงิน</div>
+            <div class="change-card-val" id="rd-change-val">0 บาท</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="rd-confirm-btn" onclick="rdConfirm()" style="display:none">+ บันทึกการจ่าย</button>
+        <button class="btn-danger" id="rd-clr-btn" onclick="rdClearAll()" style="display:none">ล้างรายการจ่ายเดือนนี้</button>
+        <button class="btn-sec" onclick="openReceipt()">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          โหลดใบเสร็จ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div id="page-status" class="page">
+    <div class="month-display" id="status-month-display">—</div>
+    <div id="status-content"></div>
+  </div>
+
+  <!-- METER -->
+  <div id="page-meter" class="page">
+    <div class="month-display" id="meter-month-display">—</div>
+    <div class="slabel first">💧 น้ำ</div>
+    <div class="tbl-wrap">
+      <table>
+        <colgroup><col style="width:18%"><col style="width:28%"><col style="width:27%"><col style="width:27%"></colgroup>
+        <thead><tr><th>ห้อง</th><th>เปิด</th><th>ปิด</th><th>ค่าน้ำ</th></tr></thead>
+        <tbody id="water-tbody"></tbody>
+      </table>
+    </div>
+    <div class="slabel">⚡ ไฟ</div>
+    <div class="tbl-wrap">
+      <table>
+        <colgroup><col style="width:18%"><col style="width:28%"><col style="width:27%"><col style="width:27%"></colgroup>
+        <thead><tr><th>ห้อง</th><th>เปิด</th><th>ปิด</th><th>ค่าไฟ</th></tr></thead>
+        <tbody id="elec-tbody"></tbody>
+      </table>
+    </div>
+    <button class="btn-primary" onclick="saveMeterAll()">บันทึกมิเตอร์ทั้งหมด</button>
+    <div class="save-msg" id="meter-msg"></div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="page-setup" class="page">
+    <div class="month-input-wrap">
+      <label>เดือนปัจจุบัน</label>
+      <input class="month-input" id="month-input" oninput="onMonthInput()">
+    </div>
+
+    <div class="slabel">ข้อมูลห้องเช่า</div>
+    <div class="panel">
+      <select class="panel-select" id="setup-dd" onchange="onSetupRoomSelect()">
+        <option value="">— เลือกห้อง —</option>
+      </select>
+      <div id="setup-detail" style="display:none">
+        <div class="pdivider"></div>
+        <div class="setup-field">
+          <span class="setup-label">เลขห้อง</span>
+          <input class="setup-input" id="s-name" style="max-width:90px;flex:none">
+        </div>
+        <div class="setup-field"><span class="setup-label">ผู้เช่า</span><input class="setup-input" id="s-tenant" placeholder="ชื่อผู้เช่า"></div>
+        <div class="setup-field"><span class="setup-label">ค่าเช่า</span><input class="setup-input" id="s-rent" type="number" oninput="updateSetupTotal()"></div>
+        <div class="setup-field"><span class="setup-label">อื่นๆ</span><input class="setup-input" id="s-other" type="number" oninput="updateSetupTotal()"></div>
+        <div class="setup-field"><span class="setup-label">จอดรถ</span><input class="setup-input" id="s-parking" type="number" oninput="updateSetupTotal()"></div>
+        <div class="setup-field"><span class="setup-label">ค่าขยะ</span><input class="setup-input" id="s-trash" type="number" oninput="updateSetupTotal()"></div>
+        <div class="total-row">
+          <span class="total-label">รวมสุทธิ (ไม่รวมน้ำ/ไฟ)</span>
+          <span class="total-val" id="s-total">0 บาท</span>
+        </div>
+        <div class="setup-field"><span class="setup-label">หมายเหตุ</span><input class="setup-input" id="s-note" placeholder="เพิ่มเติม..."></div>
+        <div class="btn-save-row">
+          <button class="btn-save" onclick="saveRoom()">บันทึก</button>
+          <button class="btn-del-room" onclick="deleteRoom()">🗑</button>
+        </div>
+        <div class="save-msg" id="room-save-msg"></div>
+      </div>
+    </div>
+    <button class="btn-add-room" onclick="addRoom()">+ เพิ่มห้องใหม่</button>
+
+    <div class="slabel">ราคาต่อหน่วย</div>
+    <div class="rate-card">
+      <div class="rate-row">
+        <span class="rate-label">⚡ ค่าไฟ</span>
+        <input class="rate-inp" id="rate-elec" type="number" value="8">
+        <span class="rate-unit">บาท/หน่วย</span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-label">💧 ค่าน้ำ หน่วย 0–5</span>
+        <input class="rate-inp" id="rate-water-min" type="number" value="115">
+        <span class="rate-unit">บาท</span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-label">💧 ค่าน้ำ หน่วย 6 ขึ้นไป</span>
+        <input class="rate-inp" id="rate-water-extra" type="number" value="20">
+        <span class="rate-unit">บาท/หน่วย</span>
+      </div>
+      <button class="btn-save" style="width:100%;margin-top:12px" onclick="saveRates()">บันทึก</button>
+      <div class="save-msg" id="rate-save-msg"></div>
+    </div>
+
+    <div class="slabel">Google Sheets Sync</div>
+    <div class="drive-section">
+      <div class="sync-status" id="sync-status"></div>
+      <button class="btn-drive" onclick="loadFromSheets()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        โหลดข้อมูลจาก Sheets
+      </button>
+      <button class="btn-drive green" onclick="save()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        บันทึกขึ้น Sheets ตอนนี้
+      </button>
+    </div>
+
+    <div class="drive-section">
+      <div class="drive-title">Export CSV (สำรองข้อมูล)</div>
+      <button class="btn-drive" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        download CSV
+      </button>
+      <button class="btn-drive" onclick="document.getElementById('file-input').click()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        import CSV
+      </button>
+      <input type="file" id="file-input" accept=".csv" onchange="importCSV(event)">
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div id="receipt-area" onclick="onReceiptOverlayClick(event)">
+  <div class="receipt-sheet">
+    <div class="receipt-paper" id="receipt-content"></div>
+    <div class="receipt-btn-row">
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / PDF</button>
+      <button class="btn-close-r" onclick="document.getElementById('receipt-area').classList.remove('open')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────
+const API_URL='https://script.google.com/macros/s/AKfycbz9qE7YLFo395M7FgPBI7SfYCRgAypYuD7lYMfRk5mexGGRTAeZz-aWxv_mDAaPWVaU/exec';
+
+let _mem={};
+const store={
+  get(k){try{return localStorage.getItem(k);}catch(e){return _mem[k]||null;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){_mem[k]=v;}},
+};
+
+const DEFAULT_ROOMS=[
+  {id:1,name:'B001',tenant:'ทรงศักดิ์,อภัทสนันท์',rent:1000,other:500,parking:0,trash:25,note:''},
+  {id:2,name:'B002',tenant:'บาลิน,สุเมธ',rent:1000,other:700,parking:0,trash:25,note:''},
+  {id:3,name:'B003',tenant:'ภัทรธิดา,อาทิตย์',rent:1000,other:500,parking:0,trash:25,note:''},
+];
+
+let rooms=JSON.parse(store.get('pos_rooms')||'null')||JSON.parse(JSON.stringify(DEFAULT_ROOMS));
+let payments=JSON.parse(store.get('pos_payments')||'{}');
+let meters=JSON.parse(store.get('pos_meters')||'{}');
+let rates=JSON.parse(store.get('pos_rates')||'{"elec":8,"waterMin":115,"waterFree":5,"waterExtra":20}');
+let currentMonth=store.get('pos_month')||getDefaultMonth();
+let _saving=false;
+
+function getDefaultMonth(){
+  const d=new Date();
+  const FMONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return FMONTHS[d.getMonth()]+' '+(d.getFullYear()+543);
+}
+
+function fmt(n){return Number(n).toLocaleString('th-TH')}
+function mkey(){return currentMonth.replace(/\s+/g,'-')}
+
+function getEntries(rid){return((payments[mkey()]||{})[rid])||[]}
+function getPaid(rid){return getEntries(rid).reduce((s,e)=>s+e.amount,0)}
+function getStatus(rid,total){
+  const e=getEntries(rid);
+  if(!e.length)return'unpaid';
+  const p=getPaid(rid);
+  return p>=total?'paid':'partial';
+}
+function addEntry(rid,method,amount){
+  const k=mkey();
+  if(!payments[k])payments[k]={};
+  if(!payments[k][rid])payments[k][rid]=[];
+  payments[k][rid].push({method,amount,date:new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short'})});
+  saveLocal();
+}
+function clearEntries(rid){
+  const k=mkey();
+  if(payments[k])delete payments[k][rid];
+  saveLocal();
+}
+function removeEntry(rid,idx){
+  const k=mkey();
+  if(payments[k]&&payments[k][rid]){payments[k][rid].splice(idx,1);if(!payments[k][rid].length)delete payments[k][rid];}
+  saveLocal();
+}
+
+function getMeterPrev(rid){
+  // find previous month's end reading
+  // iterate backwards through months
+  const months=Object.keys(meters).sort();
+  const cur=mkey();
+  for(let i=months.length-1;i>=0;i--){
+    if(months[i]<cur&&meters[months[i]][rid]){
+      return meters[months[i]][rid];
+    }
+  }
+  return null;
+}
+function getMeterCur(rid){return((meters[mkey()]||{})[rid])||null;}
+
+function calcWater(units){
+  const wMin=rates.waterMin||115;const wFree=rates.waterFree||5;const wExtra=rates.waterExtra||20;
+  if(units<=wFree)return wMin;
+  return wMin+(units-wFree)*wExtra;
+}
+function calcElec(units){return units*(rates.elec||8);}
+
+function totalBase(r){return(+r.rent||0)+(+r.other||0)+(+r.parking||0)+(+r.trash||0);}
+function totalWithMeter(r){
+  const cur=getMeterCur(r.id);
+  if(!cur)return totalBase(r);
+  const prev=getMeterPrev(r.id);
+  const wPrev=prev?prev.waterEnd:0;
+  const ePrev=prev?prev.electricEnd:0;
+  const wUnits=Math.max(0,(cur.waterEnd||0)-wPrev);
+  const eUnits=Math.max(0,(cur.electricEnd||0)-ePrev);
+  return totalBase(r)+calcWater(wUnits)+calcElec(eUnits);
+}
+
+function saveLocal(){
+  store.set('pos_rooms',JSON.stringify(rooms));
+  store.set('pos_payments',JSON.stringify(payments));
+  store.set('pos_meters',JSON.stringify(meters));
+  store.set('pos_rates',JSON.stringify(rates));
+  store.set('pos_month',currentMonth);
+}
+
+// ─── SHEETS SYNC ─────────────────────────────────────────
+function paymentsToFlat(){
+  const rows=[];
+  Object.keys(payments).forEach(mk=>{
+    Object.keys(payments[mk]||{}).forEach(rid=>{
+      (payments[mk][rid]||[]).forEach(e=>{
+        rows.push({monthKey:mk,roomId:+rid,method:e.method,amount:e.amount,date:e.date||''});
+      });
+    });
+  });
+  return rows;
+}
+function paymentsFromFlat(rows){
+  const p={};
+  rows.forEach(r=>{
+    const mk=String(r.monthKey);const rid=String(r.roomId);
+    if(!p[mk])p[mk]={};if(!p[mk][rid])p[mk][rid]=[];
+    p[mk][rid].push({method:r.method,amount:+r.amount,date:r.date||''});
+  });
+  return p;
+}
+function metersToFlat(){
+  const rows=[];
+  Object.keys(meters).forEach(mk=>{
+    Object.keys(meters[mk]||{}).forEach(rid=>{
+      const m=meters[mk][rid];
+      rows.push({monthKey:mk,roomId:+rid,waterEnd:m.waterEnd||0,electricEnd:m.electricEnd||0});
+    });
+  });
+  return rows;
+}
+function metersFromFlat(rows){
+  const m={};
+  rows.forEach(r=>{
+    const mk=String(r.monthKey);const rid=String(r.roomId);
+    if(!m[mk])m[mk]={};
+    m[mk][rid]={waterEnd:+r.waterEnd||0,electricEnd:+r.electricEnd||0};
+  });
+  return m;
+}
+function setSyncStatus(msg,cls){
+  const el=document.getElementById('sync-status');if(!el)return;
+  el.textContent=msg;el.className='sync-status '+(cls||'');
+}
+async function save(){
+  saveLocal();
+  if(_saving)return;_saving=true;
+  setSyncStatus('กำลังบันทึก...','');
+  try{
+    const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({
+      action:'save',rooms,payments:paymentsToFlat(),meters:metersToFlat()
+    })});
+    const data=await res.json();
+    setSyncStatus(data.ok?'บันทึกแล้ว ✓':'เกิดข้อผิดพลาด',data.ok?'ok':'err');
+  }catch(e){setSyncStatus('offline — บันทึกเฉพาะเครื่อง','warn');}
+  _saving=false;
+}
+async function loadFromSheets(){
+  setSyncStatus('กำลังโหลด...','');
+  try{
+    const res=await fetch(API_URL+'?action=load');
+    const data=await res.json();
+    if(data.rooms&&data.rooms.length){rooms=data.rooms.map(r=>({...r,id:+r.id,rent:+r.rent||0,other:+r.other||0,parking:+r.parking||0,trash:+r.trash||0}));store.set('pos_rooms',JSON.stringify(rooms));}
+    if(data.payments){payments=paymentsFromFlat(data.payments);store.set('pos_payments',JSON.stringify(payments));}
+    if(data.meters){meters=metersFromFlat(data.meters);store.set('pos_meters',JSON.stringify(meters));}
+    setSyncStatus('โหลดสำเร็จ ✓','ok');
+    renderAll();renderSetup();
+  }catch(e){setSyncStatus('โหลดไม่ได้ — ใช้ข้อมูลในเครื่อง','warn');}
+}
+
+// ─── HOME ────────────────────────────────────────────────
+let _rdType=null,_rdMethod=null;
+
+function renderHome(){
+  document.getElementById('home-month-display').textContent=currentMonth;
+  const active=rooms.filter(r=>r.tenant);
+  let cashAmt=0,trAmt=0,paid=0,unpaid=0;
+  active.forEach(r=>{
+    const total=totalWithMeter(r);
+    const st=getStatus(r.id,total);
+    getEntries(r.id).forEach(e=>{if(e.method==='cash')cashAmt+=e.amount;else trAmt+=e.amount;});
+    if(st==='paid')paid++;else unpaid++;
+  });
+  document.getElementById('home-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">จ่ายครบ</div><div class="metric-val green">${paid}/${active.length}</div></div>
+    <div class="metric"><div class="metric-label">ค้าง/บางส่วน</div><div class="metric-val ${unpaid?'red':''}">${unpaid} ห้อง</div></div>
+    <div class="metric"><div class="metric-label">ยอดเงินสด</div><div class="metric-val">${fmt(cashAmt)}</div></div>
+    <div class="metric"><div class="metric-label">ยอดโอน</div><div class="metric-val">${fmt(trAmt)}</div></div>`;
+
+  const dd=document.getElementById('room-dd');
+  const prev=dd.value;
+  dd.innerHTML='<option value="">— เลือกห้อง —</option>'+rooms.map(r=>{
+    if(!r.tenant)return`<option value="${r.id}">⚪ ${r.name} (ว่าง)</option>`;
+    const total=totalWithMeter(r);
+    const st=getStatus(r.id,total);
+    const icon=st==='paid'?'🟢':st==='partial'?'🟠':'🔴';
+    const tag=st==='paid'?'จ่ายครบ':st==='partial'?'จ่ายบางส่วน':'ค้างจ่าย';
+    return`<option value="${r.id}">${icon} ${r.name} (${tag})</option>`;
+  }).join('');
+  if(prev){dd.value=prev;renderRoomDetail(+prev);}
+}
+
+function onRoomSelect(){
+  const id=+document.getElementById('room-dd').value;
+  _rdType=null;_rdMethod=null;
+  document.getElementById('room-detail').style.display=id?'block':'none';
+  if(id)renderRoomDetail(id);
+}
+
+function renderRoomDetail(id){
+  const r=rooms.find(x=>x.id===id);if(!r||!r.tenant){document.getElementById('room-detail').style.display='none';return;}
+  const total=totalWithMeter(r);
+  const paid=getPaid(id);
+  const remaining=Math.max(0,total-paid);
+  const st=getStatus(id,total);
+  const FMONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  document.getElementById('rd-name').textContent='ห้อง '+r.name+' — '+r.tenant;
+  document.getElementById('rd-sub').textContent=currentMonth+'\nรวมสุทธิ '+fmt(total)+' บาท';
+
+  const bdg=document.getElementById('rd-badge');
+  if(st==='paid'){bdg.textContent='ครบแล้ว';bdg.className='badge cash';}
+  else if(st==='partial'){bdg.textContent='จ่ายบางส่วน';bdg.className='badge partial';}
+  else{bdg.textContent='ค้างจ่าย';bdg.className='badge unpaid';}
+
+  const pct=Math.min(100,total>0?Math.round(paid/total*100):0);
+  document.getElementById('rd-progress').innerHTML=paid>0?`
+    <div class="progress-bar"><div class="progress-fill ${st==='paid'?'full':'partial'}" style="width:${pct}%"></div></div>
+    <div class="progress-labels"><span>จ่ายแล้ว <b>${fmt(paid)} บาท</b></span><span>คงเหลือ <b>${fmt(remaining)} บาท</b></span></div>`:'';
+
+  const entries=getEntries(id);
+  document.getElementById('rd-history').innerHTML=entries.length?entries.map((e,i)=>`
+    <div class="pay-history-item">
+      <div class="pay-dot ${e.method}"></div>
+      <span>${e.method==='cash'?'เงินสด':'โอน'}</span>
+      <span style="color:var(--text3);font-size:12px">${e.date||''}</span>
+      <span class="pay-amt">${fmt(e.amount)} บาท</span>
+      <button class="pay-del" onclick="rdDelEntry(${id},${i})">×</button>
+    </div>`).join(''):'';
+
+  document.getElementById('stp-full').className='step-btn'+(_rdType==='full'?' sel-full':'');
+  document.getElementById('stp-partial').className='step-btn'+(_rdType==='partial'?' sel-partial':'');
+  document.getElementById('rd-partial-row').style.display=_rdType==='partial'?'block':'none';
+  document.getElementById('rd-step2').style.display=_rdType?'block':'none';
+  document.getElementById('stp-cash').className='step-btn'+(_rdMethod==='cash'?' sel-cash':'');
+  document.getElementById('stp-tr').className='step-btn'+(_rdMethod==='transfer'?' sel-transfer':'');
+  document.getElementById('rd-step3').style.display=(_rdMethod==='cash'&&_rdType)?'block':'none';
+  document.getElementById('rd-confirm-btn').style.display=(_rdType&&_rdMethod)?'block':'none';
+  document.getElementById('rd-clr-btn').style.display=entries.length?'block':'none';
+
+  if(_rdType==='full')document.getElementById('rd-amt').value=remaining>0?remaining:'';
+}
+
+function rdSelType(t){_rdType=t;_rdMethod=null;document.getElementById('rd-received').value='';document.getElementById('rd-change-card').classList.remove('show');const id=+document.getElementById('room-dd').value;if(id)renderRoomDetail(id);}
+function rdSelMethod(v){_rdMethod=v;document.getElementById('rd-received').value='';document.getElementById('rd-change-card').classList.remove('show');const id=+document.getElementById('room-dd').value;if(id)renderRoomDetail(id);}
+function rdCalcChange(){
+  const amt=+document.getElementById('rd-amt').value;
+  const rec=+document.getElementById('rd-received').value;
+  const card=document.getElementById('rd-change-card');
+  const val=document.getElementById('rd-change-val');
+  if(rec>0&&amt>0){
+    const change=rec-amt;
+    val.textContent=(change>=0?fmt(change):'ไม่พอ — ขาด '+fmt(Math.abs(change)))+' บาท';
+    val.style.color=change>=0?'var(--green)':'var(--red)';
+    card.classList.add('show');
+  }else card.classList.remove('show');
+}
+function rdConfirm(){
+  const id=+document.getElementById('room-dd').value;
+  if(!id||!_rdType||!_rdMethod){alert('กรุณาเลือกให้ครบทุกขั้นตอน');return;}
+  const amt=+document.getElementById('rd-amt').value;
+  if(!amt||amt<=0){alert('กรุณาระบุจำนวนเงิน');return;}
+  if(_rdMethod==='cash'){
+    const rec=+document.getElementById('rd-received').value;
+    if(rec>0&&rec<amt){alert('เงินที่รับมาไม่พอ');return;}
+  }
+  addEntry(id,_rdMethod,amt);
+  document.getElementById('rd-amt').value='';
+  document.getElementById('rd-received').value='';
+  document.getElementById('rd-change-card').classList.remove('show');
+  _rdType=null;_rdMethod=null;
+  renderAll();
+  const btn=document.getElementById('rd-confirm-btn');
+  const orig=btn.textContent;btn.textContent='✓ บันทึกแล้ว';
+  setTimeout(()=>btn.textContent=orig,1200);
+}
+function rdDelEntry(id,idx){if(!confirm('ลบรายการนี้?'))return;removeEntry(id,idx);renderRoomDetail(id);renderHome();renderStatus();}
+function rdClearAll(){if(!confirm('ล้างรายการจ่ายทั้งหมดของห้องนี้เดือนนี้?'))return;const id=+document.getElementById('room-dd').value;clearEntries(id);_rdType=null;_rdMethod=null;renderAll();}
+function jumpToRoom(id){showPage('home');const dd=document.getElementById('room-dd');dd.value=id;_rdType=null;_rdMethod=null;document.getElementById('room-detail').style.display='block';renderRoomDetail(id);}
+
+// ─── STATUS ──────────────────────────────────────────────
+function renderStatus(){
+  document.getElementById('status-month-display').textContent=currentMonth;
+  const active=rooms.filter(r=>r.tenant);
+  let partial=[],unpaid=[],paidRooms=[];
+  active.forEach(r=>{
+    const total=totalWithMeter(r);
+    const st=getStatus(r.id,total);
+    if(st==='paid')paidRooms.push(r);
+    else if(st==='partial')partial.push(r);
+    else unpaid.push(r);
+  });
+
+  const mkCard=(r,warnCls)=>{
+    const total=totalWithMeter(r);
+    const paid=getPaid(r.id);
+    const entries=getEntries(r.id);
+    const st=getStatus(r.id,total);
+    const sub=entries.length?entries.map(e=>`${e.method==='cash'?'สด':'โอน'} ${fmt(e.amount)}`).join(' · '):fmt(total)+' บาท';
+    const numCls=st==='paid'?(entries[entries.length-1]?.method==='cash'?'cash':'transfer'):st==='partial'?'partial':'unpaid';
+    const bl=st==='paid'?'ครบ':st==='partial'?`${fmt(paid)}/${fmt(total)}`:'ค้าง';
+    const bdgCls=st==='paid'?(numCls==='cash'?'cash':'transfer'):st==='partial'?'partial':'unpaid';
+    return`<div class="room-card${warnCls?' '+warnCls:''}" onclick="jumpToRoom(${r.id})">
+      <div class="room-num ${numCls}">${r.name}</div>
+      <div class="room-info"><div class="room-name">${r.tenant}</div><div class="room-sub">${sub}</div></div>
+      <span class="badge ${bdgCls}">${bl}</span>
+    </div>`;
+  };
+
+  let html='';
+  if(partial.length){html+=`<div class="slabel first">จ่ายบางส่วน</div>`;partial.forEach(r=>{html+=mkCard(r,'warn-amber');});}
+  if(unpaid.length){html+=`<div class="slabel${partial.length?'':' first'}">ยังไม่จ่าย</div>`;unpaid.forEach(r=>{html+=mkCard(r,'warn');});}
+  if(paidRooms.length){html+=`<div class="slabel${(partial.length||unpaid.length)?'':' first'}">จ่ายครบ</div>`;paidRooms.forEach(r=>{html+=mkCard(r,'');});}
+  if(!active.length)html=`<div class="empty-state"><p style="color:var(--text2)">ยังไม่มีห้องเช่า</p></div>`;
+  document.getElementById('status-content').innerHTML=html;
+}
+
+// ─── METER ───────────────────────────────────────────────
+function renderMeter(){
+  document.getElementById('meter-month-display').textContent=currentMonth;
+  const active=rooms.filter(r=>r.tenant);
+
+  ['water','elec'].forEach(type=>{
+    const tbody=document.getElementById(type+'-tbody');
+    tbody.innerHTML=rooms.map(r=>{
+      const prev=getMeterPrev(r.id);
+      const cur=getMeterCur(r.id);
+      const prevVal=type==='water'?(prev?prev.waterEnd:0):(prev?prev.electricEnd:0);
+      const curVal=type==='water'?(cur?cur.waterEnd:''):(cur?cur.electricEnd:'');
+      const units=curVal!==''?Math.max(0,+curVal-prevVal):null;
+      const amt=units!==null?(type==='water'?calcWater(units):calcElec(units)):null;
+      const isDone=curVal!=='';
+      return`<tr class="${isDone?'done':''}">
+        <td>${r.name}</td>
+        <td class="td-prev">${fmt(prevVal)||'0'}</td>
+        <td><input class="meter-input" type="number" id="m-${type}-${r.id}" value="${curVal}" placeholder="—" oninput="onMeterInput('${type}',${r.id})"></td>
+        <td class="td-result ${type}" id="mr-${type}-${r.id}">${amt!==null?fmt(amt):'—'}</td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+function onMeterInput(type,rid){
+  const prev=getMeterPrev(rid);
+  const prevVal=type==='water'?(prev?prev.waterEnd:0):(prev?prev.electricEnd:0);
+  const el=document.getElementById(`m-${type}-${rid}`);
+  const val=+el.value;
+  const units=Math.max(0,val-prevVal);
+  const amt=type==='water'?calcWater(units):calcElec(units);
+  const resultEl=document.getElementById(`mr-${type}-${rid}`);
+  resultEl.textContent=el.value!==''?fmt(amt):'—';
+  if(el.value!=='')el.closest('tr').className='done';
+  else el.closest('tr').className='';
+}
+
+function saveMeterAll(){
+  const k=mkey();
+  if(!meters[k])meters[k]={};
+  const active=rooms.filter(r=>r.tenant);
+  let saved=0;
+  active.forEach(r=>{
+    const wEl=document.getElementById(`m-water-${r.id}`);
+    const eEl=document.getElementById(`m-elec-${r.id}`);
+    const wVal=wEl&&wEl.value!==''?+wEl.value:null;
+    const eVal=eEl&&eEl.value!==''?+eEl.value:null;
+    if(wVal!==null||eVal!==null){
+      if(!meters[k][r.id])meters[k][r.id]={waterEnd:0,electricEnd:0};
+      if(wVal!==null)meters[k][r.id].waterEnd=wVal;
+      if(eVal!==null)meters[k][r.id].electricEnd=eVal;
+      saved++;
+    }
+  });
+  save();
+  renderAll();
+  const msg=document.getElementById('meter-msg');
+  msg.textContent=`✓ บันทึกแล้ว ${saved} ห้อง`;
+  setTimeout(()=>msg.textContent='',2000);
+}
+
+// ─── SETUP ───────────────────────────────────────────────
+let _setupRoomId=null;
+
+function renderSetup(){
+  document.getElementById('month-input').value=currentMonth;
+  document.getElementById('rate-elec').value=rates.elec||8;
+  document.getElementById('rate-water-min').value=rates.waterMin||115;
+  document.getElementById('rate-water-extra').value=rates.waterExtra||20;
+
+  const dd=document.getElementById('setup-dd');
+  const prev=dd.value;
+  dd.innerHTML='<option value="">— เลือกห้อง —</option>'+
+    rooms.map(r=>`<option value="${r.id}">${r.name}${r.tenant?' — '+r.tenant:' (ว่าง)'}</option>`).join('');
+  if(_setupRoomId){dd.value=_setupRoomId;loadSetupRoom(_setupRoomId);}
+  else{document.getElementById('setup-detail').style.display='none';}
+}
+
+function onSetupRoomSelect(){
+  const id=+document.getElementById('setup-dd').value;
+  _setupRoomId=id||null;
+  if(id)loadSetupRoom(id);
+  else document.getElementById('setup-detail').style.display='none';
+}
+
+function loadSetupRoom(id){
+  const r=rooms.find(x=>x.id===id);if(!r)return;
+  document.getElementById('s-name').value=r.name;
+  document.getElementById('s-tenant').value=r.tenant||'';
+  document.getElementById('s-rent').value=r.rent||0;
+  document.getElementById('s-other').value=r.other||0;
+  document.getElementById('s-parking').value=r.parking||0;
+  document.getElementById('s-trash').value=r.trash||0;
+  document.getElementById('s-note').value=r.note||'';
+  updateSetupTotal();
+  document.getElementById('setup-detail').style.display='block';
+  document.getElementById('room-save-msg').textContent='';
+}
+
+function updateSetupTotal(){
+  const rent=+document.getElementById('s-rent').value||0;
+  const other=+document.getElementById('s-other').value||0;
+  const parking=+document.getElementById('s-parking').value||0;
+  const trash=+document.getElementById('s-trash').value||0;
+  document.getElementById('s-total').textContent=fmt(rent+other+parking+trash)+' บาท';
+}
+
+function saveRoom(){
+  if(!_setupRoomId)return;
+  const r=rooms.find(x=>x.id===_setupRoomId);if(!r)return;
+  r.name=document.getElementById('s-name').value||r.name;
+  r.tenant=document.getElementById('s-tenant').value;
+  r.rent=+document.getElementById('s-rent').value||0;
+  r.other=+document.getElementById('s-other').value||0;
+  r.parking=+document.getElementById('s-parking').value||0;
+  r.trash=+document.getElementById('s-trash').value||0;
+  r.note=document.getElementById('s-note').value;
+  save();renderSetup();renderAll();
+  const msg=document.getElementById('room-save-msg');
+  msg.textContent='✓ บันทึกแล้ว';
+  setTimeout(()=>msg.textContent='',2000);
+}
+
+function deleteRoom(){
+  if(!_setupRoomId)return;
+  if(!confirm('ลบห้องนี้?'))return;
+  rooms=rooms.filter(x=>x.id!==_setupRoomId);
+  _setupRoomId=null;
+  save();renderSetup();renderAll();
+}
+
+function addRoom(){
+  const r={id:Date.now(),name:'',tenant:'',rent:1000,other:0,parking:0,trash:25,note:''};
+  rooms.push(r);
+  _setupRoomId=r.id;
+  renderSetup();
+}
+
+function saveRates(){
+  rates.elec=+document.getElementById('rate-elec').value||8;
+  rates.waterMin=+document.getElementById('rate-water-min').value||115;
+  rates.waterFree=5;
+  rates.waterExtra=+document.getElementById('rate-water-extra').value||20;
+  saveLocal();renderAll();renderMeter();
+  const msg=document.getElementById('rate-save-msg');
+  msg.textContent='✓ บันทึกแล้ว';
+  setTimeout(()=>msg.textContent='',2000);
+}
+
+function onMonthInput(){
+  currentMonth=document.getElementById('month-input').value;
+  saveLocal();renderAll();
+}
+
+// ─── RECEIPT ─────────────────────────────────────────────
+function openReceipt(){
+  const id=+document.getElementById('room-dd').value;if(!id)return;
+  const r=rooms.find(x=>x.id===id);if(!r)return;
+  const prev=getMeterPrev(id);
+  const cur=getMeterCur(id);
+  const wPrev=prev?prev.waterEnd:0;
+  const ePrev=prev?prev.electricEnd:0;
+  const wCur=cur?cur.waterEnd:0;
+  const eCur=cur?cur.electricEnd:0;
+  const wUnits=Math.max(0,wCur-wPrev);
+  const eUnits=Math.max(0,eCur-ePrev);
+  const wAmt=calcWater(wUnits);
+  const eAmt=calcElec(eUnits);
+  const rent=+r.rent||0;
+  const other=+r.other||0;
+  const parking=+r.parking||0;
+  const trash=+r.trash||0;
+  const total=rent+other+parking+wAmt+eAmt+trash;
+
+  document.getElementById('receipt-content').innerHTML=`
+    <div class="rh">
+      <h2>ห้องพักสุขมา 4</h2>
+      <p>เลขที่ 37/4 หมู่ 2 ต.ท่าทราย อ.เมือง จ.สมุทรสาคร 74000</p>
+    </div>
+    <div class="rmeta">
+      <span>เดือน <b>${currentMonth}</b></span>
+      <span>ห้องที่ <b>${r.name}</b></span>
+    </div>
+    <table class="rtable">
+      <tr><td>ค่าเช่าห้อง</td><td>${fmt(rent)}.00 บาท</td></tr>
+      ${other>0?`<tr><td>อื่นๆ</td><td>${fmt(other)}.00 บาท</td></tr>`:''}
+      ${parking>0?`<tr><td>จอดรถ</td><td>${fmt(parking)}.00 บาท</td></tr>`:''}
+      <tr><td>น้ำ</td><td>${fmt(wAmt)}.00 บาท</td></tr>
+      <tr><td class="sub">${wCur} − ${wPrev} = ${wUnits} หน่วย</td><td></td></tr>
+      <tr><td>ไฟ</td><td>${fmt(eAmt)}.00 บาท</td></tr>
+      <tr><td class="sub">${eCur} − ${ePrev} = ${eUnits} หน่วย</td><td></td></tr>
+      ${trash>0?`<tr><td>ค่าขยะ</td><td>${fmt(trash)}.00 บาท</td></tr>`:''}
+    </table>
+    <hr class="rdivider">
+    <div class="rtotal"><span>รวม</span><span>${fmt(total)}.00 บาท</span></div>
+    <div class="rbottom">
+      <div class="rfooter">จ่ายค่าเช่า ไม่เกินวันที่ 5 ของทุกเดือน<br>และปฏิบัติตามระเบียบของห้องเช่า</div>
+      <div class="rsign">
+        <div class="rsign-line"></div>
+        <p>ผู้รับเงิน</p>
+        <p class="date">วันที่ ......./......./.......</p>
+      </div>
+    </div>`;
+  document.getElementById('receipt-area').classList.add('open');
+}
+function onReceiptOverlayClick(e){if(e.target===document.getElementById('receipt-area'))document.getElementById('receipt-area').classList.remove('open');}
+
+// ─── CSV ─────────────────────────────────────────────────
+function exportCSV(){
+  let csv='\uFEFFห้อง,ผู้เช่า,วิธีชำระ,จำนวน,วันที่,เดือน\n';
+  rooms.filter(r=>r.tenant).forEach(r=>{
+    const entries=getEntries(r.id);
+    if(entries.length)entries.forEach(e=>{csv+=`${r.name},${r.tenant},${e.method==='cash'?'เงินสด':'โอน'},${e.amount},${e.date||''},${currentMonth}\n`;});
+    else csv+=`${r.name},${r.tenant},ยังไม่จ่าย,0,,${currentMonth}\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`ค่าเช่า_${currentMonth}.csv`;a.click();
+}
+function importCSV(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+    let imported=0;
+    lines.slice(1).forEach(line=>{
+      const cols=line.split(',');if(cols.length<4)return;
+      const[rname,,method,amtStr]=cols.map(c=>c.trim());
+      const room=rooms.find(r=>r.name===rname);if(!room)return;
+      if(method==='ยังไม่จ่าย')return;
+      const amt=+amtStr;if(!amt)return;
+      addEntry(room.id,method==='เงินสด'?'cash':'transfer',amt);imported++;
+    });
+    event.target.value='';renderAll();
+    alert(`นำเข้าสำเร็จ ${imported} รายการ`);
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ─── NAV ─────────────────────────────────────────────────
+function renderAll(){renderHome();renderStatus();renderMeter();}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='setup')renderSetup();
+}
+
+// ─── BOOT ────────────────────────────────────────────────
+renderAll();renderSetup();loadFromSheets();
+</script>
+</body>
+</html>
